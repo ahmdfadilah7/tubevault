@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /feedback
+Allow: /login
+Allow: /register
+
+Disallow: /api/
+Disallow: /library
+Disallow: /watch/
+Disallow: /playlists/
+Disallow: /auth/
+
+Sitemap: https://tubevault.hachiedigitation.com/sitemap.xml

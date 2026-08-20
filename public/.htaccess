@@ -1,0 +1,35 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Utamakan Vue SPA, bukan halaman welcome Laravel
+    DirectoryIndex index.html index.php
+
+    # HTTPS (Hostinger / proxy)
+    RewriteCond %{HTTP:X-Forwarded-Proto} =https [OR]
+    RewriteCond %{HTTPS} =on
+    RewriteRule ^ - [E=HTTPS:on]
+
+    # Authorization header (Sanctum Bearer token)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # File & folder yang ada (assets Vue, favicon, dll.)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # API Laravel → index.php
+    RewriteCond %{REQUEST_URI} ^/api [NC]
+    RewriteRule ^ index.php [L]
+
+    # Health check Laravel
+    RewriteCond %{REQUEST_URI} ^/up$ [NC]
+    RewriteRule ^ index.php [L]
+
+    # Vue SPA (history mode)
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
