@@ -10,10 +10,13 @@ use RuntimeException;
 
 class LocalMp3ConverterService
 {
+    private ?string $resolvedYtDlp = null;
+
+    private ?string $resolvedFfmpeg = null;
+
     public function isAvailable(): bool
     {
-        return $this->binaryWorks($this->ytDlpPath())
-            && $this->binaryWorks($this->ffmpegPath(), ['-version']);
+        return $this->ytDlpPath() !== null && $this->ffmpegPath() !== null;
     }
 
     /**
@@ -24,7 +27,7 @@ class LocalMp3ConverterService
     public function convertYoutubeId(string $youtubeId, ?string $title = null): array
     {
         if (! $this->isAvailable()) {
-            throw new RuntimeException('ffmpeg/yt-dlp belum tersedia di server.');
+            throw new RuntimeException('ffmpeg/yt-dlp belum tersedia di server. Set YT_DLP_PATH & FFMPEG_PATH (path absolut), lalu jalankan php artisan mp3:check.');
         }
 
         $dir = $this->tempDir();
@@ -61,6 +64,16 @@ class LocalMp3ConverterService
         return $this->convertYoutubeId($youtubeId, $video->title);
     }
 
+    public function resolvedYtDlpPath(): ?string
+    {
+        return $this->ytDlpPath();
+    }
+
+    public function resolvedFfmpegPath(): ?string
+    {
+        return $this->ffmpegPath();
+    }
+
     /**
      * @return array{path: string, mime_type: string, extension: string, format: string, source: string, youtube_id: string, bytes: int}
      */
@@ -80,43 +93,72 @@ class LocalMp3ConverterService
         $quality = (string) config('youtube.mp3.audio_quality', '5');
         $maxSize = (string) config('youtube.mp3.max_filesize', '40M');
         $timeout = (int) config('youtube.mp3.timeout', 300);
+        $ytDlp = $this->ytDlpPath();
+        $ffmpeg = $this->ffmpegPath();
 
-        $result = Process::timeout($timeout)
-            ->env([
-                'PATH' => getenv('PATH') ?: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
-            ])
-            ->run([
-                $this->ytDlpPath(),
-                '--no-playlist',
-                '--no-warnings',
-                '--newline',
-                '-x',
-                '--audio-format', 'mp3',
-                '--audio-quality', $quality,
-                '--ffmpeg-location', dirname($this->ffmpegPath()) ?: '/usr/bin',
-                '--max-filesize', $maxSize,
-                '-o', $outTemplate,
-                '--print', 'after_move:filepath',
-                $watchUrl,
-            ]);
+        $ffmpegDir = $ffmpeg ? dirname($ffmpeg) : '/usr/bin';
+        if ($ffmpegDir === '' || $ffmpegDir === '.') {
+            $ffmpegDir = '/usr/bin';
+        }
 
-        if (! $result->successful()) {
-            Log::warning('Local MP3 conversion failed', [
+        $clients = array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) config('youtube.mp3.player_clients', 'android,web,mweb'))
+        )));
+        if ($clients === []) {
+            $clients = ['android', 'web'];
+        }
+
+        $lastError = '';
+        foreach ($clients as $client) {
+            $result = Process::timeout($timeout)
+                ->env($this->processEnv())
+                ->run([
+                    $ytDlp,
+                    '--no-playlist',
+                    '--no-warnings',
+                    '--newline',
+                    '-x',
+                    '--audio-format', 'mp3',
+                    '--audio-quality', $quality,
+                    '--ffmpeg-location', $ffmpegDir,
+                    '--max-filesize', $maxSize,
+                    '--extractor-args', "youtube:player_client={$client}",
+                    '-o', $outTemplate,
+                    '--print', 'after_move:filepath',
+                    $watchUrl,
+                ]);
+
+            if ($result->successful()) {
+                $printed = trim($result->output());
+                $path = $this->resolveOutputPath($printed, $dir, $safeId);
+
+                if ($path && is_file($path)) {
+                    return $this->finalizeMp3($path, $youtubeId, $title);
+                }
+
+                $lastError = 'File MP3 tidak ditemukan setelah konversi.';
+                continue;
+            }
+
+            $lastError = Str::limit($result->errorOutput() ?: $result->output(), 500);
+            Log::warning('Local MP3 conversion attempt failed', [
                 'youtube_id' => $youtubeId,
-                'error' => Str::limit($result->errorOutput() ?: $result->output(), 500),
+                'player_client' => $client,
+                'error' => $lastError,
             ]);
-
-            throw new RuntimeException('Konversi MP3 gagal. Pastikan video tersedia dan coba lagi.');
         }
 
-        $printed = trim($result->output());
-        $path = $this->resolveOutputPath($printed, $dir, $safeId);
+        $detail = $lastError !== '' ? ' ('.Str::limit(preg_replace('/\s+/', ' ', $lastError), 160).')' : '';
 
-        if (! $path || ! is_file($path)) {
-            throw new RuntimeException('File MP3 tidak ditemukan setelah konversi.');
-        }
+        throw new RuntimeException('Konversi MP3 gagal. Pastikan video tersedia dan coba lagi.'.$detail);
+    }
 
-        // Normalize extension to .mp3 if yt-dlp left another name
+    /**
+     * @return array{path: string, mime_type: string, extension: string, format: string, source: string, youtube_id: string, bytes: int, title: ?string}
+     */
+    private function finalizeMp3(string $path, string $youtubeId, ?string $title): array
+    {
         if (! str_ends_with(strtolower($path), '.mp3')) {
             $mp3Path = preg_replace('/\.[^.]+$/', '.mp3', $path) ?: ($path.'.mp3');
             if ($mp3Path !== $path) {
@@ -152,7 +194,6 @@ class LocalMp3ConverterService
             if (is_file($line)) {
                 return $line;
             }
-            // Sometimes printed with quotes
             $unquoted = trim($line, " \t\"'");
             if (is_file($unquoted)) {
                 return $unquoted;
@@ -190,14 +231,74 @@ class LocalMp3ConverterService
         return (string) config('youtube.mp3.temp_dir', storage_path('app/tmp/mp3'));
     }
 
-    private function ytDlpPath(): string
+    private function ytDlpPath(): ?string
     {
-        return (string) config('youtube.mp3.yt_dlp_path', 'yt-dlp');
+        if ($this->resolvedYtDlp !== null) {
+            return $this->resolvedYtDlp !== '' ? $this->resolvedYtDlp : null;
+        }
+
+        $configured = (string) config('youtube.mp3.yt_dlp_path', 'yt-dlp');
+        $candidates = array_values(array_unique(array_filter([
+            $configured,
+            '/usr/local/bin/yt-dlp',
+            '/usr/bin/yt-dlp',
+            'yt-dlp',
+        ])));
+
+        foreach ($candidates as $binary) {
+            if ($this->binaryWorks($binary, ['--version'])) {
+                $this->resolvedYtDlp = $binary;
+
+                return $binary;
+            }
+        }
+
+        $this->resolvedYtDlp = '';
+
+        return null;
     }
 
-    private function ffmpegPath(): string
+    private function ffmpegPath(): ?string
     {
-        return (string) config('youtube.mp3.ffmpeg_path', 'ffmpeg');
+        if ($this->resolvedFfmpeg !== null) {
+            return $this->resolvedFfmpeg !== '' ? $this->resolvedFfmpeg : null;
+        }
+
+        $configured = (string) config('youtube.mp3.ffmpeg_path', 'ffmpeg');
+        $candidates = array_values(array_unique(array_filter([
+            $configured,
+            '/usr/bin/ffmpeg',
+            '/usr/local/bin/ffmpeg',
+            'ffmpeg',
+        ])));
+
+        foreach ($candidates as $binary) {
+            if ($this->binaryWorks($binary, ['-version'])) {
+                $this->resolvedFfmpeg = $binary;
+
+                return $binary;
+            }
+        }
+
+        $this->resolvedFfmpeg = '';
+
+        return null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function processEnv(): array
+    {
+        $path = getenv('PATH') ?: '';
+        $extra = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
+        if ($path === '') {
+            $path = $extra;
+        } elseif (! str_contains($path, '/usr/local/bin')) {
+            $path = $extra.PATH_SEPARATOR.$path;
+        }
+
+        return ['PATH' => $path];
     }
 
     /**
@@ -206,7 +307,9 @@ class LocalMp3ConverterService
     private function binaryWorks(string $binary, array $args = ['--version']): bool
     {
         try {
-            $result = Process::timeout(15)->run(array_merge([$binary], $args));
+            $result = Process::timeout(15)
+                ->env($this->processEnv())
+                ->run(array_merge([$binary], $args));
 
             return $result->successful();
         } catch (\Throwable) {

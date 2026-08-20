@@ -53,6 +53,9 @@ return [
         ))
     ))),
 
+    // JWT / API key untuk Cobalt instance (api.cobalt.tools publik sekarang wajib auth)
+    'cobalt_api_key' => env('COBALT_API_KEY'),
+
     'oembed_url' => 'https://www.youtube.com/oembed',
 
     /*
@@ -67,6 +70,7 @@ return [
     */
     'mp3' => [
         'driver' => env('MP3_CONVERT_DRIVER', 'auto'),
+        // Pakai path absolut di VPS, mis. /usr/local/bin/yt-dlp — PHP-FPM sering tidak punya PATH shell
         'yt_dlp_path' => env('YT_DLP_PATH', 'yt-dlp'),
         'ffmpeg_path' => env('FFMPEG_PATH', 'ffmpeg'),
         'audio_quality' => env('MP3_AUDIO_QUALITY', '5'), // 0=best, 5=hemat RAM/CPU (cocok VPS 1GB)
@@ -75,6 +79,7 @@ return [
         'lock_seconds' => (int) env('MP3_CONVERT_LOCK', 360),
         'temp_dir' => env('MP3_TEMP_DIR', storage_path('app/tmp/mp3')),
         'temp_ttl_minutes' => (int) env('MP3_TEMP_TTL', 60),
+        'player_clients' => env('MP3_YT_PLAYER_CLIENTS', 'android,web,mweb'),
     ],
 
     'music_keywords' => [

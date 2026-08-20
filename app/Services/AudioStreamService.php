@@ -27,12 +27,11 @@ class AudioStreamService
 
     public function resolveYoutubeId(SavedVideo $video): ?string
     {
-        if ($video->media_type === 'youtube' && $video->youtube_id) {
-            return $video->youtube_id;
-        }
-
-        if ($video->playback_youtube_id) {
-            return $video->playback_youtube_id;
+        foreach ([$video->youtube_id, $video->playback_youtube_id] as $candidate) {
+            $id = $this->normalizeYoutubeId($candidate);
+            if ($id) {
+                return $id;
+            }
         }
 
         if ($video->media_type === 'spotify' && $video->spotify_id) {
@@ -46,6 +45,24 @@ class AudioStreamService
                     return $id;
                 }
             }
+        }
+
+        return null;
+    }
+
+    private function normalizeYoutubeId(?string $value): ?string
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        $value = trim($value);
+        if (preg_match('/^[a-zA-Z0-9_-]{11}$/', $value)) {
+            return $value;
+        }
+
+        if (preg_match('/(?:youtu\.be\/|v=|\/embed\/|\/shorts\/)([a-zA-Z0-9_-]{11})/', $value, $m)) {
+            return $m[1];
         }
 
         return null;
@@ -295,22 +312,39 @@ class AudioStreamService
     {
         $baseUrl = rtrim($baseUrl, '/');
         $watchUrl = "https://www.youtube.com/watch?v={$youtubeId}";
+        $apiKey = trim((string) config('youtube.cobalt_api_key', ''));
 
         try {
+            // Cobalt menolak Accept selain application/json; jangan pakai acceptJson()/asJson() Laravel
+            // karena sering memicu error.api.header.accept. api.cobalt.tools juga butuh JWT.
+            $headers = [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ];
+            if ($apiKey !== '') {
+                $headers['Authorization'] = str_starts_with($apiKey, 'Bearer ')
+                    ? $apiKey
+                    : 'Bearer '.$apiKey;
+            }
+
             $response = Http::timeout(45)
-                ->acceptJson()
-                ->asJson()
-                ->withHeaders([
-                    'Accept' => 'application/json',
-                ])
-                ->post("{$baseUrl}/", [
+                ->withHeaders($headers)
+                ->withBody(json_encode([
                     'url' => $watchUrl,
                     'downloadMode' => 'audio',
                     'audioFormat' => $audioFormat,
                     'youtubeVideoCodec' => 'h264',
-                ]);
+                ], JSON_UNESCAPED_SLASHES), 'application/json')
+                ->post("{$baseUrl}/");
 
             if (! $response->successful()) {
+                Log::debug('Cobalt audio stream rejected', [
+                    'instance' => $baseUrl,
+                    'youtube_id' => $youtubeId,
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 300),
+                ]);
+
                 return null;
             }
 
