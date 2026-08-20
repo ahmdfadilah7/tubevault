@@ -7,6 +7,7 @@ use App\Http\Requests\PreviewVideoRequest;
 use App\Http\Requests\StoreSavedVideoRequest;
 use App\Http\Requests\UpdateSavedVideoRequest;
 use App\Http\Resources\SavedVideoResource;
+use App\Services\AudioDownloadService;
 use App\Services\AudioStreamService;
 use App\Services\SavedVideoService;
 use App\Services\YouTubeSearchService;
@@ -18,6 +19,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use RuntimeException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SavedVideoController extends Controller
@@ -25,6 +28,7 @@ class SavedVideoController extends Controller
     public function __construct(
         private readonly SavedVideoService $videos,
         private readonly AudioStreamService $audioStreams,
+        private readonly AudioDownloadService $audioDownloads,
         private readonly YouTubeSearchService $youtubeSearch,
     ) {}
 
@@ -193,7 +197,7 @@ class SavedVideoController extends Controller
         }, $status, $responseHeaders);
     }
 
-    public function downloadAudio(Request $request, int $video): StreamedResponse|JsonResponse
+    public function downloadAudio(Request $request, int $video): BinaryFileResponse|StreamedResponse|JsonResponse
     {
         $playlistId = $request->integer('playlist_id') ?: null;
         $format = strtolower($request->string('format', 'mp3')->toString());
@@ -202,17 +206,35 @@ class SavedVideoController extends Controller
         }
 
         $model = $this->videos->findForUserOrPlaylist($request->user(), $video, $playlistId);
-        $stream = $this->audioStreams->downloadForSavedVideo($model, $format === 'best' ? 'best' : 'mp3');
 
-        if (! $stream) {
+        try {
+            $prepared = $this->audioDownloads->prepare($model, $format === 'best' ? 'best' : 'mp3');
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        $filename = $this->safeDownloadFilename($model->title ?: 'tubevault-audio', $prepared['extension'] ?? 'mp3');
+
+        if (($prepared['type'] ?? null) === 'file' && ! empty($prepared['path']) && is_file($prepared['path'])) {
+            return response()
+                ->download($prepared['path'], $filename, [
+                    'Content-Type' => $prepared['mime_type'] ?? 'audio/mpeg',
+                    'Cache-Control' => 'no-store, private',
+                    'X-TubeVault-Audio-Format' => $prepared['format'] ?? 'mp3',
+                    'X-TubeVault-Audio-Source' => $prepared['source'] ?? 'local-ffmpeg',
+                ])
+                ->deleteFileAfterSend(true);
+        }
+
+        if (empty($prepared['url'])) {
             return response()->json([
-                'message' => 'Gagal menyiapkan audio. Coba lagi nanti atau pastikan konten memiliki sumber YouTube.',
+                'message' => 'Gagal menyiapkan audio. Coba lagi nanti.',
             ], 404);
         }
 
         $upstreamResponse = Http::timeout(180)
             ->withOptions(['stream' => true])
-            ->get($stream['url']);
+            ->get($prepared['url']);
 
         if (! $upstreamResponse->successful()) {
             return response()->json([
@@ -220,18 +242,7 @@ class SavedVideoController extends Controller
             ], 502);
         }
 
-        $extension = $stream['extension'] ?? 'mp3';
-        $mime = $upstreamResponse->header('Content-Type') ?: ($stream['mime_type'] ?? 'audio/mpeg');
-        $filename = $this->safeDownloadFilename($model->title ?: 'tubevault-audio', $extension);
-
-        $responseHeaders = array_filter([
-            'Content-Type' => $mime,
-            'Content-Length' => $upstreamResponse->header('Content-Length'),
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-            'Cache-Control' => 'no-store, private',
-            'X-TubeVault-Audio-Format' => $stream['format'] ?? $extension,
-            'X-TubeVault-Audio-Source' => $stream['source'] ?? 'unknown',
-        ]);
+        $mime = $upstreamResponse->header('Content-Type') ?: ($prepared['mime_type'] ?? 'audio/mpeg');
 
         return response()->stream(function () use ($upstreamResponse) {
             $body = $upstreamResponse->toPsrResponse()->getBody();
@@ -242,7 +253,14 @@ class SavedVideoController extends Controller
                 }
                 flush();
             }
-        }, 200, $responseHeaders);
+        }, 200, array_filter([
+            'Content-Type' => $mime,
+            'Content-Length' => $upstreamResponse->header('Content-Length'),
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Cache-Control' => 'no-store, private',
+            'X-TubeVault-Audio-Format' => $prepared['format'] ?? 'audio',
+            'X-TubeVault-Audio-Source' => $prepared['source'] ?? 'remote',
+        ]));
     }
 
     private function safeDownloadFilename(string $title, string $extension): string
