@@ -226,15 +226,78 @@ class AudioStreamService
     }
 
     /**
+     * Resolve audio for download. Prefer Cobalt MP3 when possible.
+     *
+     * @return array{url: string, mime_type: string, youtube_id: string, source?: string, format: string, extension: string}|null
+     */
+    public function downloadForSavedVideo(SavedVideo $video, string $preferFormat = 'mp3'): ?array
+    {
+        $youtubeId = $this->resolveYoutubeId($video);
+        if (! $youtubeId) {
+            return null;
+        }
+
+        $preferFormat = strtolower($preferFormat);
+
+        if ($preferFormat === 'mp3') {
+            $mp3 = $this->fetchMp3FromCobaltInstances($youtubeId);
+            if ($mp3) {
+                return array_merge($mp3, [
+                    'youtube_id' => $youtubeId,
+                    'source' => 'cobalt',
+                    'format' => 'mp3',
+                    'extension' => 'mp3',
+                ]);
+            }
+        }
+
+        $stream = $this->resolveForYoutubeId($youtubeId);
+        if (! $stream) {
+            return null;
+        }
+
+        $mime = strtolower((string) ($stream['mime_type'] ?? 'audio/mp4'));
+        $extension = match (true) {
+            str_contains($mime, 'mpeg') || str_contains($mime, 'mp3') => 'mp3',
+            str_contains($mime, 'webm') => 'webm',
+            str_contains($mime, 'ogg') => 'ogg',
+            default => 'm4a',
+        };
+
+        return array_merge($stream, [
+            'format' => $extension === 'mp3' ? 'mp3' : 'audio',
+            'extension' => $extension,
+        ]);
+    }
+
+    /**
      * @return array{url: string, mime_type: string}|null
      */
-    private function fetchFromCobalt(string $baseUrl, string $youtubeId): ?array
+    private function fetchMp3FromCobaltInstances(string $youtubeId): ?array
+    {
+        foreach (config('youtube.cobalt_instances', []) as $baseUrl) {
+            $stream = $this->fetchFromCobalt($baseUrl, $youtubeId, 'mp3');
+            if ($stream) {
+                return [
+                    'url' => $stream['url'],
+                    'mime_type' => 'audio/mpeg',
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{url: string, mime_type: string}|null
+     */
+    private function fetchFromCobalt(string $baseUrl, string $youtubeId, string $audioFormat = 'best'): ?array
     {
         $baseUrl = rtrim($baseUrl, '/');
         $watchUrl = "https://www.youtube.com/watch?v={$youtubeId}";
 
         try {
-            $response = Http::timeout(25)
+            $response = Http::timeout(45)
                 ->acceptJson()
                 ->asJson()
                 ->withHeaders([
@@ -243,7 +306,7 @@ class AudioStreamService
                 ->post("{$baseUrl}/", [
                     'url' => $watchUrl,
                     'downloadMode' => 'audio',
-                    'audioFormat' => 'best',
+                    'audioFormat' => $audioFormat,
                     'youtubeVideoCodec' => 'h264',
                 ]);
 
@@ -258,14 +321,17 @@ class AudioStreamService
                 return null;
             }
 
+            $mime = $audioFormat === 'mp3' ? 'audio/mpeg' : 'audio/mp4';
+
             return [
                 'url' => $url,
-                'mime_type' => 'audio/mp4',
+                'mime_type' => $mime,
             ];
         } catch (\Throwable $e) {
             Log::debug('Cobalt audio stream failed', [
                 'instance' => $baseUrl,
                 'youtube_id' => $youtubeId,
+                'audio_format' => $audioFormat,
                 'message' => $e->getMessage(),
             ]);
         }

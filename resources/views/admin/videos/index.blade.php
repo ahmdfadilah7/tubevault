@@ -73,6 +73,9 @@
                                     data-detail='@json($detail, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_UNESCAPED_UNICODE)'>
                                     Detail
                                 </button>
+                                <a class="btn btn--ghost btn--sm" href="{{ route('admin.videos.download-mp3', $video) }}">
+                                    MP3
+                                </a>
                                 <form method="POST" action="{{ route('admin.videos.destroy', $video) }}">
                                     @csrf
                                     @method('DELETE')

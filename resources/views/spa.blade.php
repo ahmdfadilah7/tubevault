@@ -124,5 +124,6 @@
       </main>
     </noscript>
     <div id="app"></div>
+    <script src="/js/mp3-download.js" defer></script>
   </body>
 </html>

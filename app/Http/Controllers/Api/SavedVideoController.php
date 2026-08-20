@@ -16,6 +16,7 @@ use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -190,5 +191,67 @@ class SavedVideoController extends Controller
                 flush();
             }
         }, $status, $responseHeaders);
+    }
+
+    public function downloadAudio(Request $request, int $video): StreamedResponse|JsonResponse
+    {
+        $playlistId = $request->integer('playlist_id') ?: null;
+        $format = strtolower($request->string('format', 'mp3')->toString());
+        if (! in_array($format, ['mp3', 'best'], true)) {
+            $format = 'mp3';
+        }
+
+        $model = $this->videos->findForUserOrPlaylist($request->user(), $video, $playlistId);
+        $stream = $this->audioStreams->downloadForSavedVideo($model, $format === 'best' ? 'best' : 'mp3');
+
+        if (! $stream) {
+            return response()->json([
+                'message' => 'Gagal menyiapkan audio. Coba lagi nanti atau pastikan konten memiliki sumber YouTube.',
+            ], 404);
+        }
+
+        $upstreamResponse = Http::timeout(180)
+            ->withOptions(['stream' => true])
+            ->get($stream['url']);
+
+        if (! $upstreamResponse->successful()) {
+            return response()->json([
+                'message' => 'Gagal mengunduh audio dari sumber. Silakan coba lagi.',
+            ], 502);
+        }
+
+        $extension = $stream['extension'] ?? 'mp3';
+        $mime = $upstreamResponse->header('Content-Type') ?: ($stream['mime_type'] ?? 'audio/mpeg');
+        $filename = $this->safeDownloadFilename($model->title ?: 'tubevault-audio', $extension);
+
+        $responseHeaders = array_filter([
+            'Content-Type' => $mime,
+            'Content-Length' => $upstreamResponse->header('Content-Length'),
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Cache-Control' => 'no-store, private',
+            'X-TubeVault-Audio-Format' => $stream['format'] ?? $extension,
+            'X-TubeVault-Audio-Source' => $stream['source'] ?? 'unknown',
+        ]);
+
+        return response()->stream(function () use ($upstreamResponse) {
+            $body = $upstreamResponse->toPsrResponse()->getBody();
+            while (! $body->eof()) {
+                echo $body->read(16384);
+                if (connection_aborted()) {
+                    break;
+                }
+                flush();
+            }
+        }, 200, $responseHeaders);
+    }
+
+    private function safeDownloadFilename(string $title, string $extension): string
+    {
+        $base = Str::slug(Str::limit($title, 80, ''));
+        if ($base === '') {
+            $base = 'tubevault-audio';
+        }
+
+        return $base.'.'.ltrim($extension, '.');
     }
 }

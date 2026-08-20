@@ -33,6 +33,8 @@ Route::prefix('v1')->group(function () {
 
         Route::post('videos/{video}/watch', [SavedVideoController::class, 'watch']);
         Route::get('videos/{video}/audio-stream', [SavedVideoController::class, 'audioStream']);
+        Route::get('videos/{video}/download-audio', [SavedVideoController::class, 'downloadAudio'])
+            ->middleware('throttle:10,1');
         Route::apiResource('videos', SavedVideoController::class);
 
         Route::get('discover/users', [DiscoveryController::class, 'users']);

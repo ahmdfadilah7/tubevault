@@ -57,6 +57,7 @@ Route::prefix('my-panel')->name('admin.')->group(function () {
         Route::delete('users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('videos', [AdminVideoController::class, 'index'])->name('videos.index');
+        Route::get('videos/{video}/download-mp3', [AdminVideoController::class, 'downloadMp3'])->name('videos.download-mp3');
         Route::delete('videos/{video}', [AdminVideoController::class, 'destroy'])->name('videos.destroy');
 
         Route::get('playlists', [AdminPlaylistController::class, 'index'])->name('playlists.index');
