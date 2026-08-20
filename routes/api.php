@@ -6,9 +6,12 @@ use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\PlaylistController;
 use App\Http\Controllers\Api\SavedVideoController;
+use App\Http\Controllers\Api\SiteSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    Route::get('site-settings', SiteSettingsController::class);
+
     Route::get('videos/preview', [SavedVideoController::class, 'preview'])
         ->middleware('optional.sanctum');
     Route::get('youtube/search', [SavedVideoController::class, 'youtubeSearch'])

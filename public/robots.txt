@@ -18,5 +18,7 @@ Disallow: /library
 Disallow: /watch/
 Disallow: /playlists/
 Disallow: /auth/
+Disallow: /my-panel
+Disallow: /my-panel/
 
 Sitemap: https://tubevault.hachiedigitation.com/sitemap.xml

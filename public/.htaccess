@@ -1,8 +1,8 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Utamakan Vue SPA, bukan halaman welcome Laravel
-    DirectoryIndex index.html index.php
+    # Laravel handle root & SPA (spa.blade.php + site settings)
+    DirectoryIndex index.php
 
     # HTTPS (Hostinger / proxy)
     RewriteCond %{HTTP:X-Forwarded-Proto} =https [OR]
@@ -13,21 +13,13 @@
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # File & folder yang ada (assets Vue, favicon, dll.)
+    # File & folder yang ada (assets Vue, favicon, storage, dll.)
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # API Laravel → index.php
-    RewriteCond %{REQUEST_URI} ^/api [NC]
+    # Semua request dinamis → Laravel (SPA, my-panel, api, dll.)
     RewriteRule ^ index.php [L]
-
-    # Health check Laravel
-    RewriteCond %{REQUEST_URI} ^/up$ [NC]
-    RewriteRule ^ index.php [L]
-
-    # Vue SPA (history mode)
-    RewriteRule ^ index.html [L]
 </IfModule>
 
 <FilesMatch "^\.">
