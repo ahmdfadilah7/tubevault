@@ -1,7 +1,7 @@
 {
-  "name": "TubeVault by HachieCode",
+  "name": "TubeVault — Pemutar Musik Tanpa Iklan",
   "short_name": "TubeVault",
-  "description": "Perpustakaan media pribadi YouTube & Spotify — dibuat oleh HachieCode (@hachiecode).",
+  "description": "Website pemutar musik tanpa iklan. Simpan & putar YouTube dan Spotify dalam perpustakaan pribadi — oleh HachieCode.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -22,6 +22,15 @@
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1536x1024",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "TubeVault — Pemutar Musik Tanpa Iklan"
     }
   ]
 }

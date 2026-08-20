@@ -1,9 +1,18 @@
+# TubeVault — https://tubevault.hachiedigitation.com
+# Pemutar musik tanpa iklan (YouTube & Spotify)
+
 User-agent: *
 Allow: /
 Allow: /feedback
 Allow: /login
 Allow: /register
+Allow: /og-image.png
+Allow: /sitemap.xml
+Allow: /robots.txt
+Allow: /favicon.svg
+Allow: /manifest.webmanifest
 
+# Area pribadi / API — jangan diindeks
 Disallow: /api/
 Disallow: /library
 Disallow: /watch/

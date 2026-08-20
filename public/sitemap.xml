@@ -1,22 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://tubevault.hachiedigitation.com/</loc>
+    <lastmod>2026-08-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="id" href="https://tubevault.hachiedigitation.com/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tubevault.hachiedigitation.com/" />
+    <image:image>
+      <image:loc>https://tubevault.hachiedigitation.com/og-image.png</image:loc>
+      <image:title>TubeVault — Pemutar Musik Tanpa Iklan</image:title>
+      <image:caption>Website pemutar musik tanpa iklan untuk YouTube dan Spotify</image:caption>
+    </image:image>
   </url>
   <url>
     <loc>https://tubevault.hachiedigitation.com/feedback</loc>
+    <lastmod>2026-08-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://tubevault.hachiedigitation.com/login</loc>
+    <lastmod>2026-08-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://tubevault.hachiedigitation.com/register</loc>
+    <lastmod>2026-08-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>

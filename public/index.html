@@ -3,50 +3,70 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="canonical" href="https://tubevault.hachiedigitation.com/" />
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="https://tubevault.hachiedigitation.com/sitemap.xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#07080c" />
+    <meta name="color-scheme" content="dark" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="TubeVault" />
+    <meta name="format-detection" content="telephone=no" />
 
-    <title>TubeVault by HachieCode — Simpan &amp; Putar YouTube &amp; Spotify</title>
+    <title>TubeVault — Pemutar Musik Tanpa Iklan | YouTube &amp; Spotify</title>
     <meta
       name="description"
-      content="TubeVault by HachieCode — simpan dan putar YouTube &amp; Spotify, buat playlist, dan kelola perpustakaan media pribadi. Dibuat oleh HachieCode (@hachiecode)."
+      content="TubeVault adalah website pemutar musik tanpa iklan. Simpan, putar, dan kelola lagu dari YouTube &amp; Spotify dalam satu perpustakaan pribadi. Gratis, bersih, dibuat oleh HachieCode."
     />
     <meta
       name="keywords"
-      content="TubeVault, HachieCode, hachiecode, YouTube, Spotify, playlist, perpustakaan media, simpan video, putar musik"
+      content="TubeVault, pemutar musik tanpa iklan, music player no ads, YouTube music, Spotify, playlist, putar musik online, HachieCode, hachiecode, perpustakaan media"
     />
     <meta name="author" content="HachieCode" />
     <meta name="creator" content="@hachiecode" />
+    <meta name="publisher" content="HachieCode" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow" />
+    <meta name="bingbot" content="index, follow" />
     <meta name="google-site-verification" content="FH0FiZEtzGi1yRsQKj4mTAxOPsc1wbCHlGbWUdb59hY" />
-    <meta name="application-name" content="TubeVault by HachieCode" />
+    <meta name="application-name" content="TubeVault" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
 
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="TubeVault by HachieCode" />
+    <meta property="og:site_name" content="TubeVault" />
     <meta property="og:locale" content="id_ID" />
-    <meta property="og:title" content="TubeVault by HachieCode — Simpan &amp; Putar YouTube &amp; Spotify" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:title" content="TubeVault — Pemutar Musik Tanpa Iklan" />
     <meta
       property="og:description"
-      content="Simpan dan putar YouTube &amp; Spotify dalam satu perpustakaan pribadi. Dibuat oleh HachieCode (@hachiecode)."
+      content="Putar musik dari YouTube &amp; Spotify tanpa iklan. Simpan lagu, buat playlist, dan nikmati perpustakaan media pribadi Anda."
     />
     <meta property="og:url" content="https://tubevault.hachiedigitation.com/" />
+    <meta property="og:image" content="https://tubevault.hachiedigitation.com/og-image.png" />
+    <meta property="og:image:secure_url" content="https://tubevault.hachiedigitation.com/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1536" />
+    <meta property="og:image:height" content="1024" />
+    <meta property="og:image:alt" content="TubeVault — Pemutar Musik Tanpa Iklan by HachieCode" />
 
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="TubeVault by HachieCode" />
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TubeVault — Pemutar Musik Tanpa Iklan" />
     <meta
       name="twitter:description"
-      content="Perpustakaan media pribadi untuk YouTube &amp; Spotify — oleh HachieCode (@hachiecode)."
+      content="Website pemutar musik tanpa iklan. Simpan &amp; putar YouTube &amp; Spotify dalam satu tempat."
     />
+    <meta name="twitter:image" content="https://tubevault.hachiedigitation.com/og-image.png" />
+    <meta name="twitter:image:alt" content="TubeVault — Pemutar Musik Tanpa Iklan" />
+    <meta name="twitter:creator" content="@hachiecode" />
 
     <script type="application/ld+json">
       {
@@ -56,10 +76,19 @@
             "@type": "WebSite",
             "@id": "https://tubevault.hachiedigitation.com/#website",
             "url": "https://tubevault.hachiedigitation.com/",
-            "name": "TubeVault by HachieCode",
-            "description": "Simpan dan putar YouTube & Spotify dalam satu perpustakaan pribadi.",
+            "name": "TubeVault",
+            "alternateName": ["TubeVault by HachieCode", "Tube Vault"],
+            "description": "Website pemutar musik tanpa iklan. Simpan dan putar YouTube & Spotify dalam satu perpustakaan pribadi.",
             "inLanguage": "id",
-            "publisher": { "@id": "https://tubevault.hachiedigitation.com/#organization" }
+            "publisher": { "@id": "https://tubevault.hachiedigitation.com/#organization" },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://tubevault.hachiedigitation.com/?q={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            }
           },
           {
             "@type": "Organization",
@@ -67,6 +96,10 @@
             "name": "HachieCode",
             "alternateName": ["HachieCode", "hachiecode"],
             "url": "https://tubevault.hachiedigitation.com/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://tubevault.hachiedigitation.com/favicon.svg"
+            },
             "sameAs": [
               "https://www.tiktok.com/@hachiecode",
               "https://saweria.co/hachiecode",
@@ -76,13 +109,41 @@
           {
             "@type": "WebApplication",
             "@id": "https://tubevault.hachiedigitation.com/#app",
-            "name": "TubeVault by HachieCode",
+            "name": "TubeVault",
+            "alternateName": "TubeVault by HachieCode",
             "url": "https://tubevault.hachiedigitation.com/",
             "applicationCategory": "MultimediaApplication",
             "operatingSystem": "Web",
-            "description": "Perpustakaan media pribadi untuk YouTube dan Spotify.",
+            "browserRequirements": "Requires JavaScript. Requires HTML5.",
+            "description": "Pemutar musik tanpa iklan untuk YouTube dan Spotify. Simpan lagu, buat playlist, dan kelola perpustakaan media pribadi.",
+            "featureList": [
+              "Pemutar musik tanpa iklan",
+              "Integrasi YouTube & Spotify",
+              "Playlist pribadi",
+              "Perpustakaan media"
+            ],
+            "image": "https://tubevault.hachiedigitation.com/og-image.png",
             "author": { "@type": "Organization", "name": "HachieCode" },
-            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "IDR" }
+            "publisher": { "@id": "https://tubevault.hachiedigitation.com/#organization" },
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "IDR",
+              "availability": "https://schema.org/InStock"
+            }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://tubevault.hachiedigitation.com/#software",
+            "name": "TubeVault",
+            "applicationCategory": "MusicApplication",
+            "operatingSystem": "Web Browser",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "IDR"
+            },
+            "description": "Website pemutar musik tanpa iklan berbasis web."
           }
         ]
       }
@@ -93,10 +154,16 @@
   <body>
     <noscript>
       <main>
-        <h1>TubeVault by HachieCode</h1>
+        <h1>TubeVault — Pemutar Musik Tanpa Iklan</h1>
         <p>
-          Simpan dan putar YouTube &amp; Spotify dalam satu perpustakaan pribadi.
+          TubeVault adalah website pemutar musik tanpa iklan. Simpan dan putar
+          YouTube &amp; Spotify dalam satu perpustakaan pribadi.
           Dibuat oleh HachieCode (@hachiecode).
+        </p>
+        <p>
+          <a href="/feedback">Kirim masukan</a> ·
+          <a href="/login">Masuk</a> ·
+          <a href="/register">Daftar</a>
         </p>
       </main>
     </noscript>
